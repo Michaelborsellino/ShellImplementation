@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <string.h>
 #include <vector>
 #include <sstream>
 #include <unistd.h>
@@ -49,6 +50,15 @@ int main(int argc, char* argv[])
 			string current(getcwd(buffer,size));
 			cout<<current<<endl;
 
+		}
+		//Built-in for set
+		else if(tokens[0] == "set")
+		{
+			char* tempChar = (char*)malloc(tokens[1].size());
+			
+			strncpy(tempChar,tokens[1].c_str(),tokens[1].size());
+			putenv(tempChar);
+			
 		}
 		
 	}
