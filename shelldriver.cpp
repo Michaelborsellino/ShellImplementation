@@ -5,6 +5,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <stdlib.h> 
+#include <dirent.h>
 
 using namespace std;
 
@@ -27,7 +28,7 @@ int main(int argc, char* argv[])
 			//cout<<tempBuff<<endl;
 			tokens.push_back(tempBuff);
 		}
-		
+		//****************************************Start of built-ins*****************************
 		//Built-in for exit
 		if(tokens[0] == "exit")
 			return 0;
@@ -55,10 +56,72 @@ int main(int argc, char* argv[])
 		else if(tokens[0] == "set")
 		{
 			char* tempChar = (char*)malloc(tokens[1].size());
-			
+		
 			strncpy(tempChar,tokens[1].c_str(),tokens[1].size());
+			//cout<<tempChar<<endl;
 			putenv(tempChar);
+			//cout<<getenv("MYPATH")<<endl;
+			free(tempChar);
+		}
+		//************************************Start of myls***************************************
+		else
+		{
+			//converting vector to array
+			int currentS = tokens.size() + 1;
+			char* stringList[currentS];
+			for(unsigned int i = 0; i < tokens.size(); i++)
+			{
+				//stringList[i] = tokens[i].c_str();
+				//stringList[i] = (char*)malloc(tokens[i].size());
+				stringList[i] = new char[tokens[i].size()];
+				strncpy(stringList[i],tokens[i].c_str(),tokens[i].size());
+				cout<<stringList[i]<<endl;
+			}
+			stringList[tokens.size()] = NULL;
+
+			string pathStuff = getenv("PATH");
+			if(getenv("MYPATH") != NULL)
+			{
+				pathStuff += ':'+ getenv("MYPATH");
+				cout<<pathStuff<<endl;
+			}
+			stringstream pathInfo(pathStuff);
 			
+			vector<string> newToks;
+			string tempToks;
+			DIR *currentdir = NULL;
+			struct dirent *info = NULL;
+			int flag = 0;
+			while(getline(pathInfo,tempToks,':'))
+			{
+				currentdir = opendir(tempToks.c_str());
+				while(info = readdir(currentdir))
+				{
+					if(info->d_name == tokens[0])
+					{
+						cout<<"Hello"<<endl;
+						int pid = fork();
+						if(pid == 0)
+						{
+							cout<<"Here"<<endl;
+							tempToks+='/'+tokens[0];
+							execv(tempToks.c_str(), stringList);
+						}
+						else
+						{
+							wait();
+							
+							
+						}
+						flag = 1;
+						break;
+					}
+				}
+				if(flag == 1)
+					break;
+			}
+			
+		
 		}
 		
 	}
