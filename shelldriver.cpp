@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdlib.h> 
 #include <dirent.h>
+#include <sys/wait.h>
 
 using namespace std;
 
@@ -49,19 +50,20 @@ int main(int argc, char* argv[])
 			size_t size = 1024;
 			buffer = (char*)malloc(size);
 			string current(getcwd(buffer,size));
+			free(buffer);
 			cout<<current<<endl;
 
 		}
 		//Built-in for set
 		else if(tokens[0] == "set")
 		{
-			char* tempChar = (char*)malloc(tokens[1].size());
+			char* tempChar = new char[tokens[1].size() + 1];
 		
-			strncpy(tempChar,tokens[1].c_str(),tokens[1].size());
+			strcpy(tempChar,tokens[1].c_str());
 			//cout<<tempChar<<endl;
 			putenv(tempChar);
 			//cout<<getenv("MYPATH")<<endl;
-			free(tempChar);
+			//free(tempChar);
 		}
 		//************************************Start of myls***************************************
 		else
@@ -69,20 +71,31 @@ int main(int argc, char* argv[])
 			//converting vector to array
 			int currentS = tokens.size() + 1;
 			char* stringList[currentS];
+			//vector<char*> constVect;
 			for(unsigned int i = 0; i < tokens.size(); i++)
 			{
+				//constVect.push_back(strcopy(tokens[i]);
 				//stringList[i] = tokens[i].c_str();
-				//stringList[i] = (char*)malloc(tokens[i].size());
-				stringList[i] = new char[tokens[i].size()];
-				strncpy(stringList[i],tokens[i].c_str(),tokens[i].size());
-				cout<<stringList[i]<<endl;
+				//stringList[i] = (char*)malloc(tokens[i].size() + 1);
+				if(stringList[i] != NULL)
+				{
+					stringList[i] = new char[tokens[i].size() + 1];
+					//cout<<"Hello"<<endl;
+					strcpy(stringList[i],tokens[i].c_str());
+					cout<<stringList[i]<<endl;
+				}
+				//cout<<tokens[i].size()<<endl;
+				//cout<<stringList[i]<<endl;
 			}
 			stringList[tokens.size()] = NULL;
-
+			//constVect.push_back(NULL);
 			string pathStuff = getenv("PATH");
+
 			if(getenv("MYPATH") != NULL)
 			{
-				pathStuff += ':'+ getenv("MYPATH");
+				//cout<<"Hello"<<endl;
+				pathStuff += ':';
+				pathStuff += getenv("MYPATH");
 				cout<<pathStuff<<endl;
 			}
 			stringstream pathInfo(pathStuff);
@@ -94,23 +107,30 @@ int main(int argc, char* argv[])
 			int flag = 0;
 			while(getline(pathInfo,tempToks,':'))
 			{
+				cout<<tempToks<<endl;
 				currentdir = opendir(tempToks.c_str());
+				//cout<<"Hello"<<endl;
 				while(info = readdir(currentdir))
 				{
+					
 					if(info->d_name == tokens[0])
 					{
 						cout<<"Hello"<<endl;
 						int pid = fork();
+						int *status;
 						if(pid == 0)
 						{
 							cout<<"Here"<<endl;
 							tempToks+='/'+tokens[0];
-							execv(tempToks.c_str(), stringList);
+							execve(tempToks.c_str(), stringList,NULL);
 						}
 						else
 						{
-							wait();
-							
+							wait(status);
+							//for(int p = tokens.size()-1; p >= 0; p--)
+							//{
+							//	free(stringList[p]);
+							//}
 							
 						}
 						flag = 1;
