@@ -9,19 +9,57 @@
 #include <sys/wait.h>
 
 using namespace std;
-
+char rwBuff[1024];
 
 int main(int argc, char* argv[])
 {
 	//Begin program loop
 	while(1)
 	{
-		vector<string> tokens;
+		vector<string> tokens, tokensMain;
 		string command = "";
 		string tempBuff = "";
+		int fds[2];
 		cout<<"$ ";
+
+		//grab full command with pipes in the parent
 		getline(cin,command);
 		
+		//split them up by the pipe delimiter in the parent
+		stringstream bigCommand(command);
+		string tempT;
+		while(getline(bigCommand,tempT,'|'))
+		{
+			tokensMain.push_back(tempT);
+		}
+		//fork and give each child a single command
+		pipe(fds);
+		write(fds[1],tokensMain[0],1024);
+		for(int d = 0; d < tokensMain.size(); d++)
+		{
+			int *status;
+			int pid2 = fork();
+			if(pid2 == 0)
+			{
+			}
+			else
+			{
+				wait(status)
+				//if there are no more commands, print out the output
+				if (d == tokensMain.size() - 1)
+				{
+					cout<<read(fds[0],1024)<<endl;
+
+				}
+				//If there are, write the result to the pipe
+				else
+				{
+					write(fds[1],read(fds[0],1024),1024);
+				}
+			}
+		}
+		//read and write back and forth from the child to the parent
+
 		//Create list of words in command line
 		stringstream commandStream(command);
 		while(commandStream >> tempBuff)
