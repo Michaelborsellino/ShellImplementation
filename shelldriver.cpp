@@ -42,29 +42,47 @@ int main(int argc, char* argv[])
 			for(int d = 0; d < tokensMain.size(); d++)
 			{
 				int *status;
-				
+				int currentChild;
 				//If child process, assign the new small command and then break from the main loop
-				
+				//cout<<tokensMain[d]<<endl;
 				if(d % 2 == 0)
 				{
-					fork();
-					close(fds[1]);
-					close(STDIN_FILENO);
-					dup(fds[0]);
-					command = tokensMain[d];
-					break;
+					currentChild = fork();
+					if(currentChild == 0)
+					{
+						cout<<"Here"<<endl;
+						close(fds[0]);
+						close(STDOUT_FILENO);
+						dup(fds[1]);
+						command = tokensMain[d];
+						allCommands(tokens, command);
+						
+						exit(1);
+					}
 				}
 				else
 				{
-					fork();
-					close(fds[0]);
-					close(STDOUT_FILENO);
-					dup(fds[1]);
-					command = tokensMain[d];
-					break;
+					currentChild = fork();
+					if(currentChild == 0)
+					{
+						cout<<"Bye"<<endl;
+						close(fds[1]);
+						close(STDIN_FILENO);
+						dup(fds[0]);
+						command = tokensMain[d];
+						allCommands(tokens, command);
+
+						exit(1);
+					}
 				}
+				if(currentChild != 0)
+					waitpid(currentChild, status, 0);
+
 				
 			}
+			close(fds[0]);
+			close(fds[1]);
+			//exit(0);
 
 		}
 		else
