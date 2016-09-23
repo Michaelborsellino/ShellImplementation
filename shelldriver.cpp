@@ -51,26 +51,19 @@ int main(int argc, char* argv[])
 					if(currentChild == 0)
 					{
 						cout<<"Parent "<<tokensMain[d]<<endl;
+						//kill read side of pipe
 						close(fds[0]); 
+						//kill ability to push to standard out
 						close(STDOUT_FILENO);
+						//redirect everything from output to input
 						dup(fds[1]);
+						//execute command
 						command = tokensMain[d];
 						allCommands(tokens, command);
 						//cout<<"Nope"<<endl;
+						//reclaim file descriptors
 						exit(0);
 						
-					}
-					else
-					{
-						cout<<"Spawned "<<currentChild<<endl;
-						//waitpid(currentChild, status, 0);
-						if(d == tokensMain.size() - 1)
-						{
-							close(fds[0]);
-							close(fds[1]);
-						}
-						
-						cout<<"Killed "<<currentChild<<endl;
 					}
 			
 				}
@@ -80,41 +73,33 @@ int main(int argc, char* argv[])
 					if(currentChild == 0)
 					{
 						cout<<"Parent "<<tokensMain[d]<<endl;
+						//Kill write end of pipe
 						close(fds[1]);
+						//Kill ability to read from standard in
 						close(STDIN_FILENO);
+						//redirect everything from input to output
 						dup(fds[0]);
+						//execute commands
 						command = tokensMain[d];
 						allCommands(tokens, command);
 						//cout<<"Nope"<<endl;
+						//reclaim file descriptors
 						exit(0);
 						
 					
 					}
-					else
-					{
-						cout<<"Spawned "<<currentChild<<endl;
-						//waitpid(currentChild, status, 0);
-						if(d == tokensMain.size() - 1)
-						{
-							close(fds[0]);
-							close(fds[1]);
-						}
-						
-						cout<<"Killed "<<currentChild<<endl;
-					}
 
+				}
+				//If last iteration close all pipes so there are no blocks
+				if(d == tokensMain.size() - 1)
+				{
+					close(fds[0]);
+					close(fds[1]);
 				}
 				waitpid(currentChild, status, 0);
 				
-				
-				
-				//wait(status);
-				//wait(status);
-				
 			}
 			
-			
-			//exit(0);
 
 		}
 		else
