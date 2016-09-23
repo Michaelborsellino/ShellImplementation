@@ -6,4 +6,4 @@ myls:myls.o
 	g++ -omyls -Wall -pedantic myls.o
 .PHONY: clean
 clean: 
-	rm *.o
+	rm *.o myls shell

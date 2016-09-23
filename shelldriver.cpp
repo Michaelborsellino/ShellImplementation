@@ -50,14 +50,15 @@ int main(int argc, char* argv[])
 					currentChild = fork();
 					if(currentChild == 0)
 					{
-						cout<<"Here"<<endl;
+						cout<<tokensMain[d]<<endl;
 						close(fds[0]);
 						close(STDOUT_FILENO);
 						dup(fds[1]);
 						command = tokensMain[d];
 						allCommands(tokens, command);
+						//cout<<"Nope"<<endl;
+						exit(0);
 						
-						exit(1);
 					}
 				}
 				else
@@ -65,19 +66,20 @@ int main(int argc, char* argv[])
 					currentChild = fork();
 					if(currentChild == 0)
 					{
-						cout<<"Bye"<<endl;
+						cout<<tokensMain[d]<<endl;
 						close(fds[1]);
 						close(STDIN_FILENO);
 						dup(fds[0]);
 						command = tokensMain[d];
 						allCommands(tokens, command);
-
-						exit(1);
+						//cout<<"Nope"<<endl;
+						exit(0);
 					}
 				}
-				if(currentChild != 0)
-					waitpid(currentChild, status, 0);
-
+			
+				waitpid(currentChild, status, 0);
+				//wait(status);
+				//wait(status);
 				
 			}
 			close(fds[0]);
@@ -175,14 +177,22 @@ void allCommands(vector<string> tokens, string command)
 				if(info->d_name == tokens[0])
 				{
 					int pid = fork();
-					int *status;
+					cout<<pid<<endl;
+					int status;
 					if(pid == 0)
 					{
+						cout<<"Child "<<tokens[0]<<endl;
 						tempToks+='/'+tokens[0];
 						execve(tempToks.c_str(), stringList,NULL);
 					}
 					else
-						wait(status);
+					{
+						
+						waitpid(pid,&status,0);
+						//wait(&status);
+						//exit(0);
+						cout<<"Killed "<<tokens[0]<<endl;
+					}
 					//Program was found, break execution
 					flag = 1;
 					break;
