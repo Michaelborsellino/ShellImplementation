@@ -50,8 +50,8 @@ int main(int argc, char* argv[])
 					currentChild = fork();
 					if(currentChild == 0)
 					{
-						cout<<tokensMain[d]<<endl;
-						close(fds[0]);
+						cout<<"Parent "<<tokensMain[d]<<endl;
+						close(fds[0]); 
 						close(STDOUT_FILENO);
 						dup(fds[1]);
 						command = tokensMain[d];
@@ -60,13 +60,26 @@ int main(int argc, char* argv[])
 						exit(0);
 						
 					}
+					else
+					{
+						cout<<"Spawned "<<currentChild<<endl;
+						//waitpid(currentChild, status, 0);
+						if(d == tokensMain.size() - 1)
+						{
+							close(fds[0]);
+							close(fds[1]);
+						}
+						
+						cout<<"Killed "<<currentChild<<endl;
+					}
+			
 				}
 				else
 				{
 					currentChild = fork();
 					if(currentChild == 0)
 					{
-						cout<<tokensMain[d]<<endl;
+						cout<<"Parent "<<tokensMain[d]<<endl;
 						close(fds[1]);
 						close(STDIN_FILENO);
 						dup(fds[0]);
@@ -74,16 +87,33 @@ int main(int argc, char* argv[])
 						allCommands(tokens, command);
 						//cout<<"Nope"<<endl;
 						exit(0);
+						
+					
 					}
+					else
+					{
+						cout<<"Spawned "<<currentChild<<endl;
+						//waitpid(currentChild, status, 0);
+						if(d == tokensMain.size() - 1)
+						{
+							close(fds[0]);
+							close(fds[1]);
+						}
+						
+						cout<<"Killed "<<currentChild<<endl;
+					}
+
 				}
-			
 				waitpid(currentChild, status, 0);
+				
+				
+				
 				//wait(status);
 				//wait(status);
 				
 			}
-			close(fds[0]);
-			close(fds[1]);
+			
+			
 			//exit(0);
 
 		}
@@ -177,21 +207,24 @@ void allCommands(vector<string> tokens, string command)
 				if(info->d_name == tokens[0])
 				{
 					int pid = fork();
-					cout<<pid<<endl;
+					//cout<<pid<<endl;
 					int status;
 					if(pid == 0)
 					{
-						cout<<"Child "<<tokens[0]<<endl;
+						cout<<"Child "<<pid<<" "<<tokens[0]<<endl;
 						tempToks+='/'+tokens[0];
 						execve(tempToks.c_str(), stringList,NULL);
+						exit(0);
 					}
 					else
 					{
 						
 						waitpid(pid,&status,0);
+						cout<<"Killed "<<pid<<" "<<tokens[0]<<endl;
 						//wait(&status);
+						
+						
 						//exit(0);
-						cout<<"Killed "<<tokens[0]<<endl;
 					}
 					//Program was found, break execution
 					flag = 1;
