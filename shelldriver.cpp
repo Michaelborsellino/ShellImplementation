@@ -25,10 +25,14 @@ int main(int argc, char* argv[])
 		string command = "";
 		//string tempBuff = "";
 		//int fds[2];
-		cout<<"$ ";
+		
 
 		//grab full command with pipes in the parent
-		getline(cin,command);
+		while(command == "")
+		{
+			cout<<"$ ";
+			getline(cin,command);
+		}
 		
 		//split them up by the pipe delimiter in the parent
 		stringstream bigCommand(command);
