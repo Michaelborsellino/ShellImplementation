@@ -7,11 +7,15 @@
 #include <stdlib.h> 
 #include <dirent.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+
 
 using namespace std;
 char rwBuff[1024];
 
 void allCommands(vector<string> tokens, string command);
+int recursivePipe(int fds[2], vector<string> tokens);
+
 int main(int argc, char* argv[])
 {
 	//Begin program loop
@@ -20,7 +24,7 @@ int main(int argc, char* argv[])
 		vector<string> tokens, tokensMain;
 		string command = "";
 		//string tempBuff = "";
-		int fds[2];
+		//int fds[2];
 		cout<<"$ ";
 
 		//grab full command with pipes in the parent
@@ -36,80 +40,120 @@ int main(int argc, char* argv[])
 		if(tokensMain.size() > 1)
 		{
 			//fork and give each child a single command
-			int pid2;
-			pipe(fds);
 			
-			for(int d = 0; d < tokensMain.size(); d++)
-			{
-				int *status;
-				int currentChild;
-				//If child process, assign the new small command and then break from the main loop
-				//cout<<tokensMain[d]<<endl;
-				if(d % 2 == 0)
+			int *status;
+			//vector< vector<int> > pipes;
+			int pipes[tokensMain.size()][2];
+
+				for(int p = tokensMain.size()-1, d = 0; p >= 0; p--, d++)
 				{
-					currentChild = fork();
-					if(currentChild == 0)
-					{
-						cout<<"Parent "<<tokensMain[d]<<endl;
-						//kill read side of pipe
-						close(fds[0]); 
-						//kill ability to push to standard out
-						close(STDOUT_FILENO);
-						//redirect everything from output to input
-						dup(fds[1]);
-						//execute command
-						command = tokensMain[d];
-						allCommands(tokens, command);
-						//cout<<"Nope"<<endl;
-						//reclaim file descriptors
-						exit(0);
-						
-					}
-			
-				}
-				else
-				{
-					currentChild = fork();
-					if(currentChild == 0)
-					{
-						cout<<"Parent "<<tokensMain[d]<<endl;
-						//Kill write end of pipe
-						close(fds[1]);
-						//Kill ability to read from standard in
-						close(STDIN_FILENO);
-						//redirect everything from input to output
-						dup(fds[0]);
-						//execute commands
-						command = tokensMain[d];
-						allCommands(tokens, command);
-						//cout<<"Nope"<<endl;
-						//reclaim file descriptors
-						exit(0);
-						
+					//int fds[2];
 					
+					pipe(pipes[d]);
+					
+					//Because pipes are constructed backwards, standard out is left untouched here.
+					//Standard in gets closed however.
+					if(p == tokensMain.size() - 1)
+					{
+
+							if(fork() == 0)
+							{
+								cout<<"Parent last "<<tokensMain[p]<<endl;
+								
+								//Attach standard in to the Read end of pipe
+								dup2(pipes[d][0],0);
+								//close the write end of the pipe
+								close(pipes[d][1]);
+
+								command = tokensMain[p];
+								cout<<"Executing "<<tokensMain[p]<<endl;
+								allCommands(tokens, command);
+								exit(0);
+							}	
+							
 					}
 
-				}
-				//If last iteration close all pipes so there are no blocks
-				if(d == tokensMain.size() - 1)
-				{
-					close(fds[0]);
-					close(fds[1]);
-				}
-				waitpid(currentChild, status, 0);
-				
-			}
-			
+					//This is the first command. 
+					else if(p == 0)
+					{		
+						//pipe(fds);																																					
+						if(fork() == 0)
+						{
+							
+							//close the standard in
+							close(0);
+							//connect stdout to write end of pipe
+							dup2(pipes[d-1][1],1);
+							//close the read end of the pipe
+							close(pipes[d-1][0]);
+							command = tokensMain[p];
+							
+							allCommands(tokens, command);
+							exit(0);
+						}
+						
+					}
+					else 
+					{
+						//pipe(fds);
+						if(fork() == 0)
+						{
+							
+							//close standard in and standard out
+							close(0);
+							close(1);
+							
+							//close the read end of last pipe
+							close(pipes[d-1][0]);
+							//close the write end of current pipe
+							close(pipes[d][1]);
+							//attach stdout to write end of last pipe
+							dup2(pipes[d-1][1], 1);
+							//attach stdin to read end of current pipe
+							dup2(pipes[d][0], 0);
+							
 
+							command = tokensMain[p];
+							allCommands(tokens, command);
+							exit(0);
+						}	
+
+					}
+					
+						
+				}
+					
+				
+				for(int i = 0; i < tokensMain.size(); i++)
+				{
+					close(pipes[i][0]);
+					close(pipes[i][1]);
+				}
+				for(int p = 0; p < tokensMain.size(); p++)
+				{
+					wait(status);
+				}
+						
 		}
 		else
 		{
+			
 			command = tokensMain[0];
+
 			allCommands(tokens, command);
+			//else
+			//	waitpid(currentPid,status,0);
 		}
 	}
 	return 0;
 }		
+
+int recursivePipe(int fds[2], vector<string> tokens)
+{
+	return 0;
+
+}
+
 void allCommands(vector<string> tokens, string command)
 {
 	string tempBuff = "";
@@ -191,35 +235,19 @@ void allCommands(vector<string> tokens, string command)
 				//If the user program is found, fork current process and execute it
 				if(info->d_name == tokens[0])
 				{
-					int pid = fork();
-					//cout<<pid<<endl;
-					int status;
-					if(pid == 0)
-					{
-						cout<<"Child "<<pid<<" "<<tokens[0]<<endl;
+					//cout<<"Child "<<pid<<" "<<tokens[0]<<endl;
+					if(fork() == 0){
 						tempToks+='/'+tokens[0];
-						execve(tempToks.c_str(), stringList,NULL);
-						exit(0);
+						execv(tempToks.c_str(), stringList);
 					}
 					else
-					{
-						
-						waitpid(pid,&status,0);
-						cout<<"Killed "<<pid<<" "<<tokens[0]<<endl;
-						//wait(&status);
-						
-						
-						//exit(0);
-					}
-					//Program was found, break execution
-					flag = 1;
-					break;
+						wait(NULL);
 				}
 			}
 			if(flag == 1)
 				break;
 		}
 	}
-	
+	//exit(0);
 
 }
