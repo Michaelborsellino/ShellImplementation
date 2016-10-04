@@ -41,6 +41,7 @@ int main(int argc, char* argv[])
 		{
 			tokensMain.push_back(tempT);
 		}
+
 		if(tokensMain.size() > 1)
 		{
 			//fork and give each child a single command
@@ -141,7 +142,23 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
+			vector<string> redirList;
+			string tempN;
+			while(getline(tokensMain[0],tempN,'<'))
+				redirList.push_back(tempN);
+			vector<string> reallist;
+			for(int i = 0; i < redirList.size(); i++)
+			{
+				while(getline(redirList[i],tempN,'>'))
+				{
+					reallist.push_back(tempN);
+				}
+			}
 			
+
+
+
+
 			command = tokensMain[0];
 
 			allCommands(tokens, command);
