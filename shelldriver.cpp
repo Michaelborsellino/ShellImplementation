@@ -8,13 +8,14 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 
 using namespace std;
 char rwBuff[1024];
 
 void allCommands(vector<string> tokens, string command);
-int recursivePipe(int fds[2], vector<string> tokens);
+void redir(string,string, vector<string>);
 
 int main(int argc, char* argv[])
 {
@@ -140,39 +141,90 @@ int main(int argc, char* argv[])
 				}
 						
 		}
+		
+		else if ((tokensMain[0].find("<") !=string::npos )|| (tokensMain[0].find(">") != string::npos)){
+			stringstream newStream(tokensMain[0]);
+			string input;
+			string tempS;
+			string output;
+			vector<string> tempList;
+			vector<string> trueCommand;
+			while(getline(newStream, tempS, '<'))
+			{
+				tempList.push_back(tempS);
+			}
+			if (tempList.size() > 1){
+				string tempIn;
+				stringstream Cleaner(tempList[1]);
+				Cleaner >> tempIn;
+				input = tempIn;
+			}
+
+			stringstream newStream1(tokensMain[0]);
+			vector<string> tempList1;
+
+			while(getline(newStream1, tempS, '>'))
+			{
+				tempList1.push_back(tempS);
+			}
+			if (tempList1.size() > 1){
+				string tempOut;
+				stringstream Cleaner(tempList1[1]);
+				Cleaner >> tempOut;
+				output = tempOut;
+			}
+			//cout<<tempList[0]<<endl;
+			trueCommand.push_back(tempList[0]);
+			//cout<<trueCommand[0]<<endl;
+			//cout<<"Hello Newb"<<endl;
+			redir(input, output, trueCommand);
+			//continue;
+		}
 		else
 		{
-			vector<string> redirList;
-			string tempN;
-			while(getline(tokensMain[0],tempN,'<'))
-				redirList.push_back(tempN);
-			vector<string> reallist;
-			for(int i = 0; i < redirList.size(); i++)
-			{
-				while(getline(redirList[i],tempN,'>'))
-				{
-					reallist.push_back(tempN);
-				}
-			}
-			
-
-
-
-
-			command = tokensMain[0];
-
-			allCommands(tokens, command);
-			//else
-			//	waitpid(currentPid,status,0);
+		command = tokensMain[0];
+		allCommands(tokens, command);
 		}
 	}
 	return 0;
 }		
 
-int recursivePipe(int fds[2], vector<string> tokens)
+void redir(string input,string output, vector<string> tokens)
 {
-	return 0;
+	//int pipeIn[2];
+	//int pipeOut[2];
+	int *status;
+	vector<string> empt;
+	int fileIn;
+	int fileOut;
+	//pipe(pipeIn);
+	if(fork() == 0)
+	{
 
+		if (!input.empty())
+		{	
+			
+			fileIn = open(input.c_str(),O_RDONLY);
+			close(STDIN_FILENO);
+			dup(fileIn);
+			
+		}
+		if ( !output.empty())
+		{
+			fileOut = open(output.c_str(),O_WRONLY | O_CREAT, 0777);
+			close(STDOUT_FILENO);
+			dup(fileOut);
+		}
+		cout<<tokens[0]<<endl;
+		allCommands(empt,tokens[0]);
+		exit(0);
+	}	
+	wait(status);
+	close(fileOut);
+	close(fileIn);
+	//int renew = open("/dev/tty",ios::in);
+	//close(0);
+	//dup(renew);
 }
 
 void allCommands(vector<string> tokens, string command)
