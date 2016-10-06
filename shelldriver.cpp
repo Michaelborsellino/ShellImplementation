@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <signal.h>
-
+#include <errno.h>
 
 using namespace std;
 char rwBuff[1024];
@@ -244,13 +244,29 @@ void release(string tokes, char* const* stringList)
 	//cout<<"Hello world\n";
 	altGrp++;
 	int * status;
+	int currentID = getpgrp();
 	if(fork() == 0)
 	{
-		setpgid(getpid(), altGrp);
+		cout<<getpid()<<endl;
+		setpgid(getpid(), 0);
+		perror("");
+		tcsetpgrp(STDOUT_FILENO, currentID);
+		tcsetpgrp(STDIN_FILENO, currentID);
+		//cout<<getpgid(getpid())<<endl;
+		//cout<<tcgetpgrp(currentID)<<endl;
+		//cout<<
 		execv(tokes.c_str(),stringList);
 	}
 	else
-		tcsetpgrp(STDIN_FILENO, getpgrp());
+	{
+		setpgid(getpid(),getpid());
+		
+		//tcsetpgrp(STDOUT_FILENO, getpgrp());
+		perror("");
+		//
+	}
+	
+
 	return;
 	
 }
