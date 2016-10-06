@@ -9,19 +9,26 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <signal.h>
 
 
 using namespace std;
 char rwBuff[1024];
-
-void allCommands(vector<string> tokens, string command);
+pid_t altGrp = 0;
+void allCommands(vector<string> tokens, string command, int commandF = 0);
 void redir(string,string, vector<string>);
 
 int main(int argc, char* argv[])
 {
+
+	//Setting group id stuff
+	setpgid(getpid(),getpid());
+	//grabbing controlling terminal
+	tcsetpgrp(STDIN_FILENO, getpgrp());
 	//Begin program loop
 	while(1)
 	{
+		int commandFlag = 0;
 		vector<string> tokens, tokensMain;
 		string command = "";
 		//string tempBuff = "";
@@ -34,7 +41,12 @@ int main(int argc, char* argv[])
 			cout<<"$ ";
 			getline(cin,command);
 		}
-		
+		if ( command.find('&') != string::npos)
+		{
+			cout<<"Hello"<<endl;
+			command.erase(command.size()-1);
+			commandFlag = 1;
+		}
 		//split them up by the pipe delimiter in the parent
 		stringstream bigCommand(command);
 		string tempT;
@@ -178,12 +190,13 @@ int main(int argc, char* argv[])
 			//cout<<trueCommand[0]<<endl;
 			//cout<<"Hello Newb"<<endl;
 			redir(input, output, trueCommand);
+			cout<<endl;
 			//continue;
 		}
 		else
 		{
-		command = tokensMain[0];
-		allCommands(tokens, command);
+			command = tokensMain[0];
+			allCommands(tokens, command, commandFlag);
 		}
 	}
 	return 0;
@@ -226,9 +239,25 @@ void redir(string input,string output, vector<string> tokens)
 	//close(0);
 	//dup(renew);
 }
-
-void allCommands(vector<string> tokens, string command)
+void release(string tokes, char* const* stringList)
 {
+	//cout<<"Hello world\n";
+	altGrp++;
+	int * status;
+	if(fork() == 0)
+	{
+		setpgid(getpid(), altGrp);
+		execv(tokes.c_str(),stringList);
+	}
+	else
+		tcsetpgrp(STDIN_FILENO, getpgrp());
+	return;
+	
+}
+
+void allCommands(vector<string> tokens, string command, int commandF)
+{
+	cout<<commandF<<endl;
 	string tempBuff = "";
 	//Create list of words in command line
 	stringstream commandStream(command);
@@ -272,6 +301,7 @@ void allCommands(vector<string> tokens, string command)
 	//************************************Start of User Program Execution Block************
 	else
 	{
+		
 		//converting vector of strings to array of character arrays
 		int currentS = tokens.size() + 1;
 		char* stringList[currentS];
@@ -292,6 +322,7 @@ void allCommands(vector<string> tokens, string command)
 			pathStuff += ':';
 			pathStuff += getenv("MYPATH");
 		}
+		
 		//Convert it to stream for easy parsing
 		stringstream pathInfo(pathStuff);
 		
@@ -299,6 +330,7 @@ void allCommands(vector<string> tokens, string command)
 		DIR *currentdir = NULL;
 		struct dirent *info = NULL;
 		int flag = 0;
+		
 		//Search through all PATH and MYPATH directories to look for user program
 		while(getline(pathInfo,tempToks,':'))
 		{
@@ -308,13 +340,25 @@ void allCommands(vector<string> tokens, string command)
 				//If the user program is found, fork current process and execute it
 				if(info->d_name == tokens[0])
 				{
+					//cout<<tokens[0]<<endl;
+					if(commandF == 1)
+					 {
+					 	release((tempToks +='/'+tokens[0]),stringList);
+					 	flag = 1;
+					 	return;
+					 }
 					//cout<<"Child "<<pid<<" "<<tokens[0]<<endl;
 					if(fork() == 0){
 						tempToks+='/'+tokens[0];
+						//cout<<tempToks<<endl;
 						execv(tempToks.c_str(), stringList);
 					}
 					else
+					{
 						wait(NULL);
+						//cout<<"Hello world\n";
+						flag = 1;
+					}
 				}
 			}
 			if(flag == 1)
