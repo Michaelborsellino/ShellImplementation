@@ -15,7 +15,8 @@
 using namespace std;
 char rwBuff[1024];
 pid_t altGrp = 0;
-void allCommands(vector<string> tokens, string command, int commandF = 0);
+//void allCommands(vector<string> tokens, string command, int commandF = 0);
+void allCommands(string command, int commandF = 0);
 void redir(string,string, vector<string>);
 
 int main(int argc, char* argv[])
@@ -43,7 +44,7 @@ int main(int argc, char* argv[])
 		}
 		if ( command.find('&') != string::npos)
 		{
-			cout<<"Hello"<<endl;
+			//cout<<"Hello"<<endl;
 			command.erase(command.size()-1);
 			commandFlag = 1;
 		}
@@ -76,7 +77,7 @@ int main(int argc, char* argv[])
 
 							if(fork() == 0)
 							{
-								cout<<"Parent last "<<tokensMain[p]<<endl;
+								//cout<<"Parent last "<<tokensMain[p]<<endl;
 								
 								//Attach standard in to the Read end of pipe
 								dup2(pipes[d][0],0);
@@ -84,8 +85,9 @@ int main(int argc, char* argv[])
 								close(pipes[d][1]);
 
 								command = tokensMain[p];
-								cout<<"Executing "<<tokensMain[p]<<endl;
-								allCommands(tokens, command);
+								//cout<<"Executing "<<tokensMain[p]<<endl;
+								//allCommands(tokens, command, 0);
+								allCommands(command, 0);
 								exit(0);
 							}	
 							
@@ -106,7 +108,8 @@ int main(int argc, char* argv[])
 							close(pipes[d-1][0]);
 							command = tokensMain[p];
 							
-							allCommands(tokens, command);
+							//allCommands(tokens, command, 0);
+							allCommands(command, 0);
 							exit(0);
 						}
 						
@@ -132,7 +135,9 @@ int main(int argc, char* argv[])
 							
 
 							command = tokensMain[p];
-							allCommands(tokens, command);
+
+							//allCommands(tokens, command, 0);
+							allCommands(command, 0);
 							exit(0);
 						}	
 
@@ -190,13 +195,14 @@ int main(int argc, char* argv[])
 			//cout<<trueCommand[0]<<endl;
 			//cout<<"Hello Newb"<<endl;
 			redir(input, output, trueCommand);
-			cout<<endl;
+			//cout<<endl;
 			//continue;
 		}
 		else
 		{
 			command = tokensMain[0];
-			allCommands(tokens, command, commandFlag);
+			//allCommands(tokens, command, commandFlag);
+			allCommands(command, commandFlag);
 		}
 	}
 	return 0;
@@ -211,6 +217,10 @@ void redir(string input,string output, vector<string> tokens)
 	int fileIn;
 	int fileOut;
 	//pipe(pipeIn);
+	//for(int x = 0; x < tokens.size(); x++)
+	//	cout<<tokens[0]<<endl;
+	//if(in)
+	
 	if(fork() == 0)
 	{
 
@@ -220,21 +230,30 @@ void redir(string input,string output, vector<string> tokens)
 			fileIn = open(input.c_str(),O_RDONLY);
 			close(STDIN_FILENO);
 			dup(fileIn);
+			tokens[0].erase(tokens[0].find("<"));
 			
 		}
 		if ( !output.empty())
 		{
-			fileOut = open(output.c_str(),O_WRONLY | O_CREAT, 0777);
+			fileOut = open(output.c_str(),O_WRONLY | O_TRUNC | O_CREAT, 0777);
 			close(STDOUT_FILENO);
 			dup(fileOut);
+			tokens[0].erase(tokens[0].find(">"));
 		}
-		cout<<tokens[0]<<endl;
-		allCommands(empt,tokens[0]);
+		cout<<"Hello\n";
+		//allCommands(empt,tokens[0],0);
+		allCommands(tokens[0],0);
 		exit(0);
 	}	
+	//cout<<tokens[0]<<endl;
 	wait(status);
-	close(fileOut);
-	close(fileIn);
+	//cout<<"Hello\n";
+	if(!input.empty())
+		close(fileIn);
+	if(!output.empty())
+		close(fileOut);
+	//close(fileIn);
+	return;
 	//int renew = open("/dev/tty",ios::in);
 	//close(0);
 	//dup(renew);
@@ -271,14 +290,16 @@ void release(string tokes, char* const* stringList)
 	
 }
 
-void allCommands(vector<string> tokens, string command, int commandF)
+void allCommands(string command, int commandF)
 {
 	cout<<commandF<<endl;
+	vector<string> tokens;
 	string tempBuff = "";
 	//Create list of words in command line
 	stringstream commandStream(command);
 	while(commandStream >> tempBuff)
 	{
+		cout<<tempBuff<<endl;
 		tokens.push_back(tempBuff);
 	}
 	//****************************************Start of built-ins*****************************
@@ -323,11 +344,12 @@ void allCommands(vector<string> tokens, string command, int commandF)
 		char* stringList[currentS];
 		for(unsigned int i = 0; i < tokens.size(); i++)
 		{
-			if(stringList[i] != NULL)
-			{
+			//if(stringList[i] != NULL)
+			//{
 				stringList[i] = new char[tokens[i].size() + 1];
 				strcpy(stringList[i],tokens[i].c_str());
-			}
+				cout<<stringList[i]<<endl;
+			//}
 		}
 		//Null Terminating string list for exec
 		stringList[tokens.size()] = NULL;
