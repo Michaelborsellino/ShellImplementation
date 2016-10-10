@@ -42,7 +42,12 @@ int main(int argc, char* argv[])
 		while(command == "")
 		{
 			cout<<"$ ";
+			if(cin.peek() == -1)
+			{
+				exit(0);
+			}
 			getline(cin,command);
+			
 		}
 		if ( command.find('&') != string::npos)
 		{
