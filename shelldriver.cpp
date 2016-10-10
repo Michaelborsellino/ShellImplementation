@@ -17,7 +17,8 @@ char rwBuff[1024];
 pid_t altGrp = 0;
 //void allCommands(vector<string> tokens, string command, int commandF = 0);
 void allCommands(string command, int commandF = 0);
-void redir(string,string, vector<string>);
+void redirt(string,string, string);
+void release(string tokes, char* const* stringList);
 
 int main(int argc, char* argv[])
 {
@@ -27,15 +28,16 @@ int main(int argc, char* argv[])
 	//grabbing controlling terminal
 	tcsetpgrp(STDIN_FILENO, getpgrp());
 	//Begin program loop
-	while(1)
+	while(true)
 	{
 		int commandFlag = 0;
+		cout<<"Lolwow\n";
 		vector<string> tokens, tokensMain;
 		string command = "";
 		//string tempBuff = "";
 		//int fds[2];
 		
-
+		
 		//grab full command with pipes in the parent
 		while(command == "")
 		{
@@ -159,44 +161,46 @@ int main(int argc, char* argv[])
 						
 		}
 		
-		else if ((tokensMain[0].find("<") !=string::npos )|| (tokensMain[0].find(">") != string::npos)){
-			stringstream newStream(tokensMain[0]);
+		else if ((command.find("<") !=string::npos )|| (command.find(">") != string::npos))
+		{
+
+			stringstream newStream(command);
 			string input;
 			string tempS;
 			string output;
-			vector<string> tempList;
-			vector<string> trueCommand;
-			while(getline(newStream, tempS, '<'))
+			string trueCommand;
+			int startVal = 0, endVal = 0;
+			//This part will either terminate at the end of the string or at the > symbol
+			if(command.find("<") !=string::npos)
 			{
-				tempList.push_back(tempS);
+				startVal = command.find("<") + 1;
+				if(command.find(">") !=string::npos)
+				{
+					stringstream temp(command.substr(startVal, (command.find(">")-1) - startVal));
+					temp >> input;
+				}
+				else
+				{
+					stringstream temp(command.substr(startVal));
+					temp >> input;
+				}
 			}
-			if (tempList.size() > 1){
-				string tempIn;
-				stringstream Cleaner(tempList[1]);
-				Cleaner >> tempIn;
-				input = tempIn;
+			else
+			{
+				startVal = command.find(">")-1;
+			}
+			//This symbol will always be the last of the two
+			if(command.find(">") !=string::npos)
+			{
+				stringstream temp(command.substr(command.find(">") + 1));
+				temp >> output;
 			}
 
-			stringstream newStream1(tokensMain[0]);
-			vector<string> tempList1;
-
-			while(getline(newStream1, tempS, '>'))
-			{
-				tempList1.push_back(tempS);
-			}
-			if (tempList1.size() > 1){
-				string tempOut;
-				stringstream Cleaner(tempList1[1]);
-				Cleaner >> tempOut;
-				output = tempOut;
-			}
-			//cout<<tempList[0]<<endl;
-			trueCommand.push_back(tempList[0]);
-			//cout<<trueCommand[0]<<endl;
-			//cout<<"Hello Newb"<<endl;
-			redir(input, output, trueCommand);
-			//cout<<endl;
-			//continue;
+			trueCommand = command.substr(0,startVal);
+			cout<<input<<" "<<output<<" "<<trueCommand<<endl;
+			redirt(input, output, trueCommand);
+			cout<<"Holy shit"<<endl;
+			continue;
 		}
 		else
 		{
@@ -204,59 +208,68 @@ int main(int argc, char* argv[])
 			//allCommands(tokens, command, commandFlag);
 			allCommands(command, commandFlag);
 		}
+		cout<<"Nope\n";
 	}
 	return 0;
 }		
 
-void redir(string input,string output, vector<string> tokens)
+void redirt(string input,string output, string tokens)
 {
-	//int pipeIn[2];
-	//int pipeOut[2];
+	
 	int *status;
 	vector<string> empt;
 	int fileIn;
+	int retainIn = dup(0);
+	int retainOut = dup(1);
 	int fileOut;
-	//pipe(pipeIn);
-	//for(int x = 0; x < tokens.size(); x++)
-	//	cout<<tokens[0]<<endl;
-	//if(in)
+	
+	if (!input.empty())
+	{	
+		
+		fileIn = open(input.c_str(),O_RDONLY);
+		close(STDIN_FILENO);
+		dup(fileIn);
+		if(tokens.find("<") != string::npos)
+			tokens.erase(tokens.find("<"));
+		
+	}
+	if ( !output.empty())
+	{
+		fileOut = open(output.c_str(),O_WRONLY | O_TRUNC | O_CREAT, 0777);
+		close(STDOUT_FILENO);
+		dup(fileOut);
+		if(tokens.find(">") != string::npos)
+			tokens.erase(tokens.find(">"));
+	}
 	
 	if(fork() == 0)
 	{
-
-		if (!input.empty())
-		{	
-			
-			fileIn = open(input.c_str(),O_RDONLY);
-			close(STDIN_FILENO);
-			dup(fileIn);
-			tokens[0].erase(tokens[0].find("<"));
-			
-		}
-		if ( !output.empty())
-		{
-			fileOut = open(output.c_str(),O_WRONLY | O_TRUNC | O_CREAT, 0777);
-			close(STDOUT_FILENO);
-			dup(fileOut);
-			tokens[0].erase(tokens[0].find(">"));
-		}
 		cout<<"Hello\n";
 		//allCommands(empt,tokens[0],0);
-		allCommands(tokens[0],0);
+		allCommands(tokens,0);
 		exit(0);
 	}	
 	//cout<<tokens[0]<<endl;
-	wait(status);
-	//cout<<"Hello\n";
-	if(!input.empty())
-		close(fileIn);
-	if(!output.empty())
-		close(fileOut);
-	//close(fileIn);
-	return;
-	//int renew = open("/dev/tty",ios::in);
-	//close(0);
-	//dup(renew);
+	else{
+		wait(status);
+		//cout<<"Hello\n";
+		if(!input.empty())
+		{
+			close(fileIn);
+			dup2(retainIn,0);
+			cout<<"Hello1\n";
+			perror("");
+		}
+		if(!output.empty())
+		{
+			close(fileOut);
+			dup2(retainOut,1);
+			cout<<"Hello2\n";
+			perror("");
+		}
+		cout<<"What?!\n";
+	}
+	
 }
 void release(string tokes, char* const* stringList)
 {
