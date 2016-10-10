@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 	while(true)
 	{
 		int commandFlag = 0;
-		cout<<"Lolwow\n";
+		//cout<<"Lolwow\n";
 		vector<string> tokens, tokensMain;
 		string command = "";
 		//string tempBuff = "";
@@ -197,9 +197,9 @@ int main(int argc, char* argv[])
 			}
 
 			trueCommand = command.substr(0,startVal - 1);
-			cout<<input<<" "<<output<<" "<<trueCommand<<endl;
+			//cout<<input<<" "<<output<<" "<<trueCommand<<endl;
 			redirt(input, output, trueCommand);
-			cout<<"Holy shit"<<endl;
+			//cout<<"Holy shit"<<endl;
 			continue;
 		}
 		else
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
 			//allCommands(tokens, command, commandFlag);
 			allCommands(command, commandFlag);
 		}
-		cout<<"Nope\n";
+		//cout<<"Nope\n";
 	}
 	return 0;
 }		
@@ -222,7 +222,7 @@ void redirt(string input,string output, string tokens)
 	int retainIn = dup(0);
 	int retainOut = dup(1);
 	int fileOut;
-	cout<<tokens<<endl;
+	//cout<<tokens<<endl;
 	if (!input.empty())
 	{	
 		
@@ -242,48 +242,41 @@ void redirt(string input,string output, string tokens)
 			tokens.erase(tokens.find(">"));
 	}
 	
-	//if(fork() == 0)
-	//{
-		//cout<<"Hello\n";
-		//allCommands(empt,tokens[0],0);
+
 		allCommands(tokens,0);
-	//	exit(0);
-	//}	
-	//cout<<tokens[0]<<endl;
-	//else{
-		wait(status);
-		cout<<"Hello\n";
+
+		//cout<<"Hello\n";
 		if(!input.empty())
 		{
-			cout<<"Hello1\n";
+			//cout<<"Hello1\n";
 			close(fileIn);
 			dup2(retainIn,0);
 			//cout<<"Hello1\n";
-			perror("");
+			//perror("");
 		}
 		if(!output.empty())
 		{
-			cout<<"Hello2\n";
+			//cout<<"Hello2\n";
 			close(fileOut);
 			dup2(retainOut,1);
 			
-			perror("");
+			//perror("");
 		}
-		cout<<"What?!\n";
+		//cout<<"What?!\n";
 	//}
 	
 }
 void release(string tokes, char* const* stringList)
 {
 	//cout<<"Hello world\n";
-	altGrp++;
+	//altGrp++;
 	int * status;
 	int currentID = getpgrp();
 	if(fork() == 0)
 	{
-		cout<<getpid()<<endl;
+		//cout<<getpid()<<endl;
 		setpgid(getpid(), 0);
-		perror("");
+		//perror("");
 		tcsetpgrp(STDOUT_FILENO, currentID);
 		tcsetpgrp(STDIN_FILENO, currentID);
 		//cout<<getpgid(getpid())<<endl;
@@ -296,7 +289,7 @@ void release(string tokes, char* const* stringList)
 		setpgid(getpid(),getpid());
 		
 		//tcsetpgrp(STDOUT_FILENO, getpgrp());
-		perror("");
+		//perror("");
 		//
 	}
 	
@@ -307,14 +300,14 @@ void release(string tokes, char* const* stringList)
 
 void allCommands(string command, int commandF)
 {
-	cout<<commandF<<endl;
+	//cout<<commandF<<endl;
 	vector<string> tokens;
 	string tempBuff = "";
 	//Create list of words in command line
 	stringstream commandStream(command);
 	while(commandStream >> tempBuff)
 	{
-		cout<<tempBuff<<endl;
+		//cout<<tempBuff<<endl;
 		tokens.push_back(tempBuff);
 	}
 	//****************************************Start of built-ins*****************************
@@ -363,7 +356,7 @@ void allCommands(string command, int commandF)
 			//{
 				stringList[i] = new char[tokens[i].size() + 1];
 				strcpy(stringList[i],tokens[i].c_str());
-				cout<<stringList[i]<<endl;
+				//cout<<stringList[i]<<endl;
 			//}
 		}
 		//Null Terminating string list for exec
