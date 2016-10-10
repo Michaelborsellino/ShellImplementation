@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
 				temp >> output;
 			}
 
-			trueCommand = command.substr(0,startVal);
+			trueCommand = command.substr(0,startVal - 1);
 			cout<<input<<" "<<output<<" "<<trueCommand<<endl;
 			redirt(input, output, trueCommand);
 			cout<<"Holy shit"<<endl;
@@ -222,7 +222,7 @@ void redirt(string input,string output, string tokens)
 	int retainIn = dup(0);
 	int retainOut = dup(1);
 	int fileOut;
-	
+	cout<<tokens<<endl;
 	if (!input.empty())
 	{	
 		
@@ -242,33 +242,35 @@ void redirt(string input,string output, string tokens)
 			tokens.erase(tokens.find(">"));
 	}
 	
-	if(fork() == 0)
-	{
-		cout<<"Hello\n";
+	//if(fork() == 0)
+	//{
+		//cout<<"Hello\n";
 		//allCommands(empt,tokens[0],0);
 		allCommands(tokens,0);
-		exit(0);
-	}	
+	//	exit(0);
+	//}	
 	//cout<<tokens[0]<<endl;
-	else{
+	//else{
 		wait(status);
-		//cout<<"Hello\n";
+		cout<<"Hello\n";
 		if(!input.empty())
 		{
+			cout<<"Hello1\n";
 			close(fileIn);
 			dup2(retainIn,0);
-			cout<<"Hello1\n";
+			//cout<<"Hello1\n";
 			perror("");
 		}
 		if(!output.empty())
 		{
+			cout<<"Hello2\n";
 			close(fileOut);
 			dup2(retainOut,1);
-			cout<<"Hello2\n";
+			
 			perror("");
 		}
 		cout<<"What?!\n";
-	}
+	//}
 	
 }
 void release(string tokes, char* const* stringList)
