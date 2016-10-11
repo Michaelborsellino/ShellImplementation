@@ -276,27 +276,41 @@ void release(string tokes, char* const* stringList)
 	//cout<<"Hello world\n";
 	//altGrp++;
 	int * status;
-	int currentID = getpgrp();
-	if(fork() == 0)
-	{
-		//cout<<getpid()<<endl;
-		setpgid(getpid(), 0);
-		//perror("");
-		tcsetpgrp(STDOUT_FILENO, currentID);
-		tcsetpgrp(STDIN_FILENO, currentID);
-		//cout<<getpgid(getpid())<<endl;
-		//cout<<tcgetpgrp(currentID)<<endl;
-		//cout<<
-		execv(tokes.c_str(),stringList);
+	int cpid;
+	//int currentID = getpgid(getpid());
+	 if(fork() == 0)
+	 {
+		if(cpid = fork() == 0)
+		{
+			//cout<<getpid()<<endl;
+			setpgid(getpid(), 0);
+			
+			execv(tokes.c_str(),stringList);
+		}
+		else
+		{
+			exit(0);
+		}
 	}
 	else
 	{
-		setpgid(getpid(),getpid());
+		wait(status);
+		tcsetpgrp(STDIN_FILENO, getpgrp());
+		tcsetpgrp(STDOUT_FILENO, getpgrp());
+		//waitpid(cpid,status,WNOHANG);
 		
-		//tcsetpgrp(STDOUT_FILENO, getpgrp());
-		//perror("");
-		//
 	}
+	//}
+	
+
+	// else
+	// {
+	// 	//setpgid(getpid(),getpid());
+		
+	// 	//tcsetpgrp(STDOUT_FILENO, getpgrp());
+	// 	//perror("");
+	// 	//
+	// }
 	
 
 	return;
