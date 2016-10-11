@@ -14,11 +14,11 @@
 
 using namespace std;
 char rwBuff[1024];
-pid_t altGrp = 0;
-//void allCommands(vector<string> tokens, string command, int commandF = 0);
+
 void allCommands(string command, int commandF = 0);
 void redirt(string,string, string);
 void release(string tokes, char* const* stringList);
+
 
 int main(int argc, char* argv[])
 {
@@ -31,99 +31,88 @@ int main(int argc, char* argv[])
 	while(true)
 	{
 		int commandFlag = 0;
-		//cout<<"Lolwow\n";
+		//Setting up parsing variables
 		vector<string> tokens, tokensMain;
 		string command = "";
-		//string tempBuff = "";
-		//int fds[2];
-		
-		
+	
 		//grab full command with pipes in the parent
 		while(command == "")
 		{
 			cout<<"$ ";
+			//Looking for C-d signal
 			if(cin.peek() == -1)
 			{
 				exit(0);
 			}
 			getline(cin,command);
-			
 		}
+		//If a background symbol is found, set flag and delete it
 		if ( command.find('&') != string::npos)
 		{
-			//cout<<"Hello"<<endl;
 			command.erase(command.size()-1);
 			commandFlag = 1;
 		}
-		//split them up by the pipe delimiter in the parent
+		//if not, look for pipe symbols and split them up 
 		stringstream bigCommand(command);
 		string tempT;
 		while(getline(bigCommand,tempT,'|'))
 		{
 			tokensMain.push_back(tempT);
 		}
-
+		//If pipe symbols were found
 		if(tokensMain.size() > 1)
-		{
-			//fork and give each child a single command
-			
+		{	
 			int *status;
-			//vector< vector<int> > pipes;
+			//create all the pipes
 			int pipes[tokensMain.size()][2];
 
 				for(int p = tokensMain.size()-1, d = 0; p >= 0; p--, d++)
 				{
-					//int fds[2];
-					
+					//open the pipe	
 					pipe(pipes[d]);
 					
 					//Because pipes are constructed backwards, standard out is left untouched here.
-					//Standard in gets closed however.
+					//Standard in gets redirected to pipe.
 					if(p == tokensMain.size() - 1)
 					{
 
 							if(fork() == 0)
 							{
-								//cout<<"Parent last "<<tokensMain[p]<<endl;
 								
 								//Attach standard in to the Read end of pipe
 								dup2(pipes[d][0],0);
-								//close the write end of the pipe
+								//Close the write end of the pipe
 								close(pipes[d][1]);
-
 								command = tokensMain[p];
-								//cout<<"Executing "<<tokensMain[p]<<endl;
-								//allCommands(tokens, command, 0);
+								//Execute code
 								allCommands(command, 0);
 								exit(0);
 							}	
 							
 					}
 
-					//This is the first command. 
+					//This is the case of the first command. 
+					//Close read end of pipe, redirect stdout to write end, 
 					else if(p == 0)
 					{		
 						//pipe(fds);																																					
 						if(fork() == 0)
 						{
-							
-							//close the standard in
-							close(0);
 							//connect stdout to write end of pipe
 							dup2(pipes[d-1][1],1);
 							//close the read end of the pipe
 							close(pipes[d-1][0]);
 							command = tokensMain[p];
-							
-							//allCommands(tokens, command, 0);
+							//Execute code
 							allCommands(command, 0);
 							exit(0);
 						}
 						
 					}
+					//Case of a middle command
+					//redirect both stdin and stdout to different pipes
 					else 
 					{
-						//pipe(fds);
 						if(fork() == 0)
 						{
 							
@@ -140,20 +129,16 @@ int main(int argc, char* argv[])
 							//attach stdin to read end of current pipe
 							dup2(pipes[d][0], 0);
 							
-
 							command = tokensMain[p];
 
-							//allCommands(tokens, command, 0);
+							//Execute code
 							allCommands(command, 0);
 							exit(0);
 						}	
-
-					}
-					
-						
+					}		
 				}
 					
-				
+				//Close all parent ends of pipe, wait for all children
 				for(int i = 0; i < tokensMain.size(); i++)
 				{
 					close(pipes[i][0]);
@@ -165,7 +150,7 @@ int main(int argc, char* argv[])
 				}
 						
 		}
-		
+		//Parsing for input and output files in redirect
 		else if ((command.find("<") !=string::npos )|| (command.find(">") != string::npos))
 		{
 
@@ -202,18 +187,16 @@ int main(int argc, char* argv[])
 			}
 
 			trueCommand = command.substr(0,startVal - 1);
-			//cout<<input<<" "<<output<<" "<<trueCommand<<endl;
 			redirt(input, output, trueCommand);
-			//cout<<"Holy shit"<<endl;
+			
 			continue;
 		}
+		//Single command, no modifications
 		else
 		{
 			command = tokensMain[0];
-			//allCommands(tokens, command, commandFlag);
 			allCommands(command, commandFlag);
 		}
-		//cout<<"Nope\n";
 	}
 	return 0;
 }		
@@ -227,7 +210,7 @@ void redirt(string input,string output, string tokens)
 	int retainIn = dup(0);
 	int retainOut = dup(1);
 	int fileOut;
-	//cout<<tokens<<endl;
+	//redirect stdin and out to proper files
 	if (!input.empty())
 	{	
 		
@@ -247,42 +230,32 @@ void redirt(string input,string output, string tokens)
 			tokens.erase(tokens.find(">"));
 	}
 	
+	//Execute command like normal
+	allCommands(tokens,0);
 
-		allCommands(tokens,0);
-
-		//cout<<"Hello\n";
-		if(!input.empty())
-		{
-			//cout<<"Hello1\n";
-			close(fileIn);
-			dup2(retainIn,0);
-			//cout<<"Hello1\n";
-			//perror("");
-		}
-		if(!output.empty())
-		{
-			//cout<<"Hello2\n";
-			close(fileOut);
-			dup2(retainOut,1);
-			
-			//perror("");
-		}
-		//cout<<"What?!\n";
-	//}
+	//return file descriptors to normal stdin and out
+	if(!input.empty())
+	{
+		close(fileIn);
+		dup2(retainIn,0);
+	}
+	if(!output.empty())
+	{
+		close(fileOut);
+		dup2(retainOut,1);
+	
+	}
 	
 }
 void release(string tokes, char* const* stringList)
 {
-	//cout<<"Hello world\n";
-	//altGrp++;
 	int * status;
-	int cpid;
-	//int currentID = getpgid(getpid());
-	 if(fork() == 0)
-	 {
-		if(cpid = fork() == 0)
+	//Double Fork and terminate parent right away so child becomes child of init
+	if(fork() == 0)
+	{
+		if(fork() == 0)
 		{
-			//cout<<getpid()<<endl;
+			
 			setpgid(getpid(), 0);
 			
 			execv(tokes.c_str(),stringList);
@@ -296,25 +269,7 @@ void release(string tokes, char* const* stringList)
 	{
 		wait(status);
 		tcsetpgrp(STDIN_FILENO, getpgrp());
-		tcsetpgrp(STDOUT_FILENO, getpgrp());
-		//waitpid(cpid,status,WNOHANG);
-		
 	}
-	//}
-	
-
-	// else
-	// {
-	// 	//setpgid(getpid(),getpid());
-		
-	// 	//tcsetpgrp(STDOUT_FILENO, getpgrp());
-	// 	//perror("");
-	// 	//
-	// }
-	
-
-	return;
-	
 }
 
 void allCommands(string command, int commandF)
@@ -332,7 +287,9 @@ void allCommands(string command, int commandF)
 	//****************************************Start of built-ins*****************************
 	//Built-in for exit
 	if(tokens[0] == "exit")
+	{
 		exit(0);
+	}
 	//Built-in for cd
 	else if(tokens[0] == "cd")
 	{
@@ -352,7 +309,6 @@ void allCommands(string command, int commandF)
 		string current(getcwd(buffer,size));
 		free(buffer);
 		cout<<current<<endl;
-		//write(fds[1],current,1024);
 
 	}
 	//Built-in for set
@@ -371,12 +327,8 @@ void allCommands(string command, int commandF)
 		char* stringList[currentS];
 		for(unsigned int i = 0; i < tokens.size(); i++)
 		{
-			//if(stringList[i] != NULL)
-			//{
-				stringList[i] = new char[tokens[i].size() + 1];
-				strcpy(stringList[i],tokens[i].c_str());
-				//cout<<stringList[i]<<endl;
-			//}
+			stringList[i] = new char[tokens[i].size() + 1];
+			strcpy(stringList[i],tokens[i].c_str());
 		}
 		//Null Terminating string list for exec
 		stringList[tokens.size()] = NULL;
@@ -405,23 +357,21 @@ void allCommands(string command, int commandF)
 				//If the user program is found, fork current process and execute it
 				if(info->d_name == tokens[0])
 				{
-					//cout<<tokens[0]<<endl;
+					//If the background flag is set, go to background execute
 					if(commandF == 1)
 					 {
 					 	release((tempToks +='/'+tokens[0]),stringList);
 					 	flag = 1;
 					 	return;
 					 }
-					//cout<<"Child "<<pid<<" "<<tokens[0]<<endl;
+					//Execute command
 					if(fork() == 0){
 						tempToks+='/'+tokens[0];
-						//cout<<tempToks<<endl;
 						execv(tempToks.c_str(), stringList);
 					}
 					else
 					{
 						wait(NULL);
-						//cout<<"Hello world\n";
 						flag = 1;
 					}
 				}
@@ -430,6 +380,4 @@ void allCommands(string command, int commandF)
 				break;
 		}
 	}
-	//exit(0);
-
 }
