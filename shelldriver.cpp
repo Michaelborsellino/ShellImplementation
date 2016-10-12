@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				startVal = command.find(">")-1;
+				startVal = command.find(">");
 			}
 			//This symbol will always be the last of the two
 			if(command.find(">") !=string::npos)
@@ -186,7 +186,8 @@ int main(int argc, char* argv[])
 				temp >> output;
 			}
 
-			trueCommand = command.substr(0,startVal - 1);
+			trueCommand = command.substr(0,startVal);
+			cout<<trueCommand<<endl;
 			redirt(input, output, trueCommand);
 			
 			continue;
@@ -211,6 +212,7 @@ void redirt(string input,string output, string tokens)
 	int retainOut = dup(1);
 	int fileOut;
 	//redirect stdin and out to proper files
+	cout<<tokens<<endl;
 	if (!input.empty())
 	{	
 		
